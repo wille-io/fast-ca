@@ -14,10 +14,29 @@
 #include <memory>
 #include <vector>
 #include <unistd.h> // grr.. not portable
+#include <termios.h> // blank pwd / echo on/off
 #include <iostream>
 
 
 using namespace Botan;
+termios t;
+
+
+void echoRestore()
+{
+  tcsetattr(STDIN_FILENO, TCSANOW, &t);
+}
+
+
+void echoOff()
+{
+  termios _t;
+  tcgetattr(STDIN_FILENO, &_t);
+  t = _t;
+
+  _t.c_lflag &= ~ECHO;
+  tcsetattr(STDIN_FILENO, TCSAFLUSH, &_t);
+}
 
 
 int main(int argc, char **argv)
@@ -41,12 +60,33 @@ int main(int argc, char **argv)
     while (askForPwd)
     {
       printf("> Enter a secure password for encrypting the CA's private keys: ");
+
+      echoOff();
       std::cin >> pwd;
+      echoRestore();
+      printf("\n");
 
       if (pwd.length() < 3)
-        puts("Password too short!");        
-      else
-        askForPwd = false;
+      {
+        puts("Password too short!");
+        continue;
+      }
+
+      printf("> Repeat the password: ");
+
+      std::string pwd2;
+      echoOff();
+      std::cin >> pwd2;
+      echoRestore();
+      printf("\n");
+
+      if (pwd != pwd2)
+      {
+        puts("> Passwords do not match!");
+        continue;
+      }
+
+      askForPwd = false;
     }
 
     //std::cerr << "pwd: '" << pwd << "'" << std::endl;
@@ -61,7 +101,7 @@ int main(int argc, char **argv)
       puts("writing root keys failed!");
       return -1;
     }
-    
+
     fwrite(rootCertPrivKeyData.data(), 1, rootCertPrivKeyData.size(), f);
     fclose(f);
 
@@ -103,7 +143,7 @@ int main(int argc, char **argv)
     return -1;
   }
 
-  
+
   puts("Loading CA certificate ...");
   X509_Certificate caCert = X509_Certificate("./ca.crt");
   AutoSeeded_RNG rng;
@@ -116,11 +156,14 @@ int main(int argc, char **argv)
   while (askForPwd)
   {
     printf("> Enter the CA's private key's password: ");
+
+    echoOff();
     std::cin >> pwd;
-    //std::cerr << "pwd: '" << pwd << "'" << std::endl;
+    echoRestore();
+    printf("\n");
 
     if (pwd.length() < 3)
-      puts("Password too short!");        
+      puts("Password too short!");
     else
     {
       try
