@@ -33,11 +33,20 @@ $ sudo dnf install botan2-devel
 
 Use cmake to generate the fast-ca executable & install it on your system:
 
+Ubuntu:
 ```sh
 $ mkdir build
 $ cd build
 $ cmake ..
 $ make
+$ sudo make install
+```
+
+Fedora:
+```sh
+$ cmake -S . -B build
+$ cmake --build build
+$ cd build
 $ sudo make install
 ```
 
