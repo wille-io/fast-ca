@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Botan REQUIRED)
-include_directories(SYSTEM ${BOTAN_INCLUDE_DIRS})
 
 add_executable(fastca main.cpp)
+target_include_directories(fastca SYSTEM PRIVATE ${BOTAN_INCLUDE_DIRS})
 target_link_libraries(fastca ${BOTAN_LIBRARIES})
