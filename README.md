@@ -7,7 +7,7 @@ Use fast-ca to ... :
   - rapid prototype a public key encryption protected network
   - create a production ready secured private network with sane default options
   - have your websites in your own network encrypted to prevent password theft
-  - and my more ...
+  - and many more ...
 
 ### Sane defaults
 
