@@ -43,6 +43,7 @@ int main(int argc, char **argv)
 {
   puts("fast-ca");
   std::string pwd;
+  std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
 
   if (access("ca.crt", F_OK) == -1)
   {
@@ -105,9 +106,14 @@ int main(int argc, char **argv)
     fwrite(rootCertPrivKeyData.data(), 1, rootCertPrivKeyData.size(), f);
     fclose(f);
 
-
+    
     // generate the certificate from the CA's private keys, with these options:
-    X509_Cert_Options opts("");
+    X509_Cert_Options opts("", 
+#if __cplusplus > 201703L // std::chrono::years only available in c++20
+                                          X509_Time(now + std::chrono::years(5)).time_since_epoch()); // create a certificate that is valid from now, for 5 years
+#else                                          
+                                          X509_Time(now + std::chrono::hours(43800)).time_since_epoch()); // create a certificate that is valid from now, for 5 years (43.800 hours)
+#endif
     opts.common_name = "fast-ca Root Certificate";
     opts.add_constraints(Key_Constraints::DIGITAL_SIGNATURE);
     opts.add_ex_constraint("PKIX.ServerAuth");
@@ -235,13 +241,12 @@ int main(int argc, char **argv)
   PKCS10_Request request = X509::create_cert_req(opts, privKey, "SHA-256", rng);
 
 
-  std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
   puts("Creating client certificate ...");
   X509_Certificate cert = ca.sign_request(request, rng, X509_Time(now), 
 #if __cplusplus > 201703L // std::chrono::years only available in c++20
-                                          X509_Time(now + std::chrono::years(10))); // create a certificate that is valid from now, for ten years
+                                          X509_Time(now + std::chrono::years(5))); // create a certificate that is valid from now, for 5 years
 #else                                          
-                                          X509_Time(now + std::chrono::hours(315569520))); // create a certificate that is valid from now, for ten years (315.569.520 hours)
+                                          X509_Time(now + std::chrono::hours(43800))); // create a certificate that is valid from now, for 5 years (43.800 hours)
 #endif
   
   
