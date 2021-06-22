@@ -44,10 +44,12 @@ int main(int argc, char **argv)
   puts("fast-ca");
   std::string pwd;
   std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+  std::string caKeyFilename = "./ca.pem";
+  std::string caCrtFilename = "./ca.crt";
 
-  if (access("ca.crt", F_OK) == -1)
+  if (access(caKeyFilename.c_str(), F_OK) == -1)
   {
-    // if there is no ca.crt, fast-ca hasn't created the CA yet, generate it:
+    // if there is no ca.pem, fast-ca hasn't created the CA yet, generate it:
     puts("No CA found - creating new CA");
 
     AutoSeeded_RNG rng;
@@ -94,8 +96,8 @@ int main(int argc, char **argv)
 
 
     // encrypt the private key and write it to disk
-    std::vector<uint8_t> rootCertPrivKeyData = PKCS8::BER_encode(rootCertPrivKey, rng, pwd);
-    FILE *f = fopen("./ca.ber", "w");
+    std::string rootCertPrivKeyString = PKCS8::PEM_encode(rootCertPrivKey, rng, pwd);    
+    FILE *f = fopen(caKeyFilename.c_str(), "w");
 
     if (!f)
     {
@@ -103,7 +105,7 @@ int main(int argc, char **argv)
       return -1;
     }
 
-    fwrite(rootCertPrivKeyData.data(), 1, rootCertPrivKeyData.size(), f);
+    fwrite(rootCertPrivKeyString.data(), 1, rootCertPrivKeyString.size(), f);
     fclose(f);
 
     
@@ -125,7 +127,7 @@ int main(int argc, char **argv)
 
     puts("Writing root certificate ...");
     std::string rootCertData(rootCert.PEM_encode());
-    f = fopen("./ca.crt", "w");
+    f = fopen(caCrtFilename.c_str(), "w");
 
     if (!f)
     {
@@ -151,12 +153,12 @@ int main(int argc, char **argv)
 
 
   puts("Loading CA certificate ...");
-  X509_Certificate caCert = X509_Certificate("./ca.crt");
+  X509_Certificate caCert = X509_Certificate(caCrtFilename);
   AutoSeeded_RNG rng;
 
 
   puts("Loading CA keys ...");
-  Private_Key *caPrivKey = nullptr;
+  Private_Key *caPrivKey = nullptr;  
 
   bool askForPwd = pwd.empty(); // only ask for the password if the user didn't enter it yet
   while (askForPwd)
@@ -174,7 +176,7 @@ int main(int argc, char **argv)
     {
       try
       {
-        caPrivKey = PKCS8::load_key("./ca.ber", rng, pwd);
+        caPrivKey = PKCS8::load_key(caKeyFilename, rng, pwd);
       }
       catch(...)
       {
@@ -190,7 +192,7 @@ int main(int argc, char **argv)
   {
     try
     {
-      caPrivKey = PKCS8::load_key("./ca.ber", rng, pwd);
+      caPrivKey = PKCS8::load_key(caKeyFilename, rng, pwd);
     }
     catch(...)
     {
