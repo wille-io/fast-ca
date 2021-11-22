@@ -110,12 +110,7 @@ int main(int argc, char **argv)
 
     
     // generate the certificate from the CA's private keys, with these options:
-    X509_Cert_Options opts("", 
-#if __cplusplus > 201703L // std::chrono::years only available in c++20
-                                          X509_Time(now + std::chrono::years(10)).time_since_epoch()); // create a certificate that is valid from now, for 10 years
-#else                                          
-                                          X509_Time(now + std::chrono::hours(87660)).time_since_epoch()); // create a certificate that is valid from now, for 10 years (87.660 hours)
-#endif
+    X509_Cert_Options opts("", 10 * 365 * 24 * 60 * 60);
     opts.common_name = "fast-ca Root Certificate";
     opts.add_constraints(Key_Constraints::DIGITAL_SIGNATURE);
     opts.add_ex_constraint("PKIX.ServerAuth");
