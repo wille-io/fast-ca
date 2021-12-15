@@ -30,6 +30,11 @@ Fedora:
 $ sudo dnf install botan2-devel
 ```
 
+... or use the docker container:
+```sh
+docker run -it -v ${PWD}:/mnt willeio/fast-ca bash -c "cd /mnt && fastca MyHostname" # creates the CA and the cert + key for 'MyHostname' in the current directory
+```
+
 
 Use cmake to generate the fast-ca executable & install it on your system:
 
