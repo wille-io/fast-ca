@@ -7,6 +7,7 @@
 #include <botan/auto_rng.h>
 #include <botan/pubkey.h> // bug: botan 2.12.1 does a sizeof for (undefined) PK_Signer when using X509CA
 #include <botan/pkcs8.h>
+#include <botan/hex.h>
 
 #include <sys/stat.h> // mkdir
 #include <stdio.h>
@@ -46,6 +47,7 @@ int main(int argc, char **argv)
   std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
   std::string caKeyFilename = "./ca.pem";
   std::string caCrtFilename = "./ca.crt";
+  std::string taKeyFilename = "./ta.key";
 
   if (access(caKeyFilename.c_str(), F_OK) == -1)
   {
@@ -132,6 +134,34 @@ int main(int argc, char **argv)
 
     fwrite(rootCertData.data(), 1, rootCertData.size(), f);
     fclose(f);
+
+
+    // generate ta static key file
+    puts("Creating ta static key file");
+
+    const auto taKeyData = rng.random_vec(256); // 2048 bit random key
+    std::string taKeyString = Botan::hex_encode(taKeyData);
+
+    for (int i = 0; i < 16; i++)
+      taKeyString.insert(i * 32 + i, "\n");
+
+    taKeyString.insert(0,
+      "# 2048 bit OpenVPN static key\n"
+      "-----BEGIN OpenVPN Static key V1-----");
+
+    taKeyString.append("\n-----END OpenVPN Static key V1-----");
+
+    f = fopen(taKeyFilename.c_str(), "w");
+
+    if (!f)
+    {
+      puts("Writing TA static key file failed!");
+      return -1;
+    }
+
+    fwrite(taKeyString.data(), 1, taKeyString.size(), f);
+    fclose(f);
+
     puts("CA initialized");
   }
   else
